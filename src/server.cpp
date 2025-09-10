@@ -2,6 +2,6 @@
 
 int main(){
 
-    std::cout<<"Server!"<<std::endl;
+    std::cout<<"Server!"<<std::endl; 
     return 0;
 }
