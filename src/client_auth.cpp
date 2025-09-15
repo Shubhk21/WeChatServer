@@ -1,4 +1,5 @@
 #include "client_auth.h"
+#include "db_pool.h"
 
 void handleClientAuth(){
 
@@ -7,8 +8,9 @@ void handleClientAuth(){
     auth_server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
         std::cout << "Received GET /getdata from client" << std::endl;
 
-
+        
         // db call
+
 
         res.set_content(R"({"status": "bool"})", "application/json");
     });
