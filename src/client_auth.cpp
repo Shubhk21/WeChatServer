@@ -22,7 +22,7 @@ void handleClientAuth(){
         res.set_content(R"({"status": "bool"})", "application/json");
     });
 
-    
+
     auth_server.listen(CONFIG::SERVER_IP,CONFIG::SERVER_PORT);
 
 }
