@@ -3,6 +3,8 @@
 
 void handleClientAuth(){
 
+    DBPool DBPool_obj("",5);
+
     httplib::Server auth_server;
 
     auth_server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
@@ -19,7 +21,7 @@ void handleClientAuth(){
         std::cout << "Received GET /getdata from client" << std::endl;
 
 
-        // db call
+        
 
         res.set_content(R"({"status": "bool"})", "application/json");
     });
