@@ -24,7 +24,7 @@ DBPool::~DBPool()
     }
 }
 
-PGconn *DBPool ::acquireConnection()
+PGconn *DBPool::acquireConnection()
 {
     std::unique_lock<std::mutex> lock(mtx);
     cond.wait(lock, [this]()
