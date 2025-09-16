@@ -3,12 +3,12 @@
 
 void handleClientAuth(){
 
-    DBPool DBPool_obj("host=localhost port=5432 dbname=postgres user=postgres password=210820",5);
+    DBPool DBPool_obj(CONFIG::DB_URL,5);
 
     httplib::Server auth_server;
 
     auth_server.Post("/login", [&DBPool_obj](const httplib::Request& req, httplib::Response& res) {
-        std::cout << "Received POST request from CLIENT" << std::endl;
+        std::cout << "Received POST /login from CLIENT" << std::endl;
 
         if(req.body.empty()){
             nlohmann::json error_response = {
@@ -81,7 +81,7 @@ void handleClientAuth(){
     });
 
     auth_server.Post("/register", [&DBPool_obj](const httplib::Request& req, httplib::Response& res) {
-        std::cout << "Received GET /getdata from client" << std::endl;
+        std::cout << "Received POST /register from client" << std::endl;
 
         auto j = nlohmann::json::parse(req.body);
 
