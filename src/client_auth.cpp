@@ -3,7 +3,7 @@
 
 void handleClientAuth(){
 
-    DBPool DBPool_obj("postgresql://sani@localhost/testdb",5);
+    DBPool DBPool_obj("host=localhost port=5432 dbname=postgres user=postgres password=210820",5);
 
     httplib::Server auth_server;
 
@@ -26,7 +26,7 @@ void handleClientAuth(){
 
         PGconn *conn = DBPool_obj.acquireConnection();
 
-        const char* query = "SELECT id FROM users WHERE username = $1 AND password = $2";
+        const char* query = "SELECT id FROM users WHERE username = $1 AND password_hash = $2";
         const char* paramValues[] = { 
             username.c_str(),
             password.c_str()
@@ -120,7 +120,7 @@ void handleClientAuth(){
         else{
             PGresult* insert_result = PQexecParams(
             conn,
-            "INSERT INTO users(username,password) VALUES($1,$2)",
+            "INSERT INTO users(username,password_hash) VALUES($1,$2)",
             2,        // number of parameters
             NULL,     // let PostgreSQL infer types
             paramValues,
