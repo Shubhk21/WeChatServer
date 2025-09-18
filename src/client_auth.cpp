@@ -141,6 +141,6 @@ void handleClientAuth(){
     });
 
 
-    auth_server.listen(CONFIG::SERVER_IP,CONFIG::SERVER_PORT);
+    auth_server.listen(CONFIG::SERVER_IP,CONFIG::SERVER_PORT_API);
 
 }

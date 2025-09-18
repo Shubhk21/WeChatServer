@@ -4,6 +4,8 @@
 
 SOCKET WS::server_socket                = INVALID_SOCKET;
 
+HANDLE WS::hiocp;
+
 void WS::Initialize(){
 
     WSADATA wsadata;
@@ -24,7 +26,7 @@ void WS::CreateSocket(){
 void WS::Bind(){
     SOCKADDR_IN server_address;
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(CONFIG::SERVER_PORT);
+    server_address.sin_port = htons(CONFIG::SERVER_PORT_SOCKET);
 
     if (InetPtonA(AF_INET, CONFIG::SERVER_IP.c_str(), &server_address.sin_addr) != 1) {
         std::cerr << "Failed to create socket address!";
@@ -59,3 +61,38 @@ int WS::SendData(std::string data){
     return send(server_socket, data.c_str(), data.length(), 0);
 }
 #endif
+
+
+DWORD WINAPI WS::WorkerThread(LPVOID lpParam){
+
+    while(1){
+        DWORD bytesTransferred;
+        ULONG_PTR completionKey;
+        OVERLAPPED* pOv;
+
+        BOOL ok = GetQueuedCompletionStatus(hiocp, &bytesTransferred, &completionKey, &pOv, INFINITE);
+
+        if(!ok){
+            std::cerr<<"Error occured in worker thread Queue function!\n";
+            continue;
+        }
+        ClientContext* client = (ClientContext*)completionKey;
+
+        if(bytesTransferred==0){
+            std::cout<<"Client disconnected!\n";
+            closesocket(client->client_socket);
+            delete client;
+            continue;
+        }
+
+        std::cout << "Received from client: " << client->recvBuff << std::endl;
+
+        ZeroMemory(&client->ol,sizeof(OVERLAPPED));
+        DWORD recvflag = 0;
+        WSABUF recvBuf = {sizeof(client->recvBuff), client->recvBuff};
+        WSARecv(client->client_socket, &recvBuf, 1, NULL, &recvflag, &client->ol, NULL);
+    }
+
+    return 0;
+
+}
