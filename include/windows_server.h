@@ -2,10 +2,13 @@
 #include<iostream>
 #include<WS2tcpip.h>
 #include<WinSock2.h>
+#include "client_context.h"
 #include<tchar.h>
 #pragma comment(lib,"ws2_32.lib")
 
 namespace WS{
+
+    extern HANDLE hiocp;
 
     extern SOCKET server_socket;
 
@@ -20,4 +23,6 @@ namespace WS{
     SOCKET AcceptSocket();
 
     int SendData(std::string data); // send data
+
+    DWORD WINAPI WorkerThread(LPVOID lpParam);
 }
