@@ -42,6 +42,9 @@ void chatServer(){
         clients.push_back(client);
     }
 
+    closesocket(WS::server_socket);
+    WSACleanup();
+
     #elif APPLE
 
     #endif
@@ -55,11 +58,11 @@ int main(){
 
     std::thread auth_server_thread(handleClientAuth);
 
-    //std::thread chat_server_thread(chatServer);
+    std::thread chat_server_thread(chatServer);
 
     auth_server_thread.join();
 
-    //chat_server_thread.join();
+    chat_server_thread.join();
 
     return 0;
 }

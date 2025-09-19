@@ -6,6 +6,10 @@ SOCKET WS::server_socket                = INVALID_SOCKET;
 
 HANDLE WS::hiocp;
 
+std::map<std::string,SOCKET> WS::usr_to_soc;
+
+std::map<SOCKET,std::string> WS::soc_to_usr;
+
 void WS::Initialize(){
 
     WSADATA wsadata;
@@ -57,10 +61,16 @@ SOCKET WS::AcceptSocket(){
     return accept(server_socket, nullptr, nullptr);
 }
 
-int WS::SendData(std::string data){
-    return send(server_socket, data.c_str(), data.length(), 0);
+int WS::SendData(std::string sender,std::string data,SOCKET client_socket){
+    std::cout<<"inside senddatta\n";
+    nlohmann::json data_packet = {
+        {"sender" , sender},
+        {"data" , data}
+    };
+
+    std::cout<<sender<<" "<<data<<std::endl;
+    return send(client_socket, data_packet.dump().c_str(), data_packet.dump().length(), 0);
 }
-#endif
 
 
 DWORD WINAPI WS::WorkerThread(LPVOID lpParam){
@@ -80,6 +90,8 @@ DWORD WINAPI WS::WorkerThread(LPVOID lpParam){
 
         if(bytesTransferred==0){
             std::cout<<"Client disconnected!\n";
+            WS::usr_to_soc.erase(WS::soc_to_usr[client->client_socket]);
+            WS::soc_to_usr.erase(client->client_socket);
             closesocket(client->client_socket);
             delete client;
             continue;
@@ -87,8 +99,39 @@ DWORD WINAPI WS::WorkerThread(LPVOID lpParam){
 
         std::cout << "Received from client: " << client->recvBuff << std::endl;
 
+        auto j_data = nlohmann::json::parse(client->recvBuff);
+
+        std::string send_user = j_data.at("sender").get<std::string>();
+        std::string data_to_send = j_data.at("data").get<std::string>();
+        std::string recieve_user = j_data.at("reciever").get<std::string>();
+
+
+        if(data_to_send=="hand_shake" && recieve_user=="hand_shake"){
+            WS::usr_to_soc.emplace(send_user,client->client_socket);
+            WS::soc_to_usr.emplace(client->client_socket,send_user);
+            std::cout<<"hand shake\n";
+        }
+        else{
+
+            std::cout<<"message to send\n";
+
+            auto find_user  = WS::usr_to_soc.find(recieve_user);
+
+            if(find_user!=WS::usr_to_soc.end()){
+                std::cout<<"sending message\n";
+                int bytes_send = WS::SendData(send_user,data_to_send,find_user->second);
+                std::cout<<"bytes :"<<" "<<bytes_send<<'\n';
+            }
+            else{
+                std::cout<<"No such User\n";
+                WS::SendData("","No such User!",client->client_socket);
+            }
+        }
+
+
         ZeroMemory(&client->ol,sizeof(OVERLAPPED));
         DWORD recvflag = 0;
+        ZeroMemory(&client->recvBuff,sizeof(client->recvBuff));
         WSABUF recvBuf = {sizeof(client->recvBuff), client->recvBuff};
         WSARecv(client->client_socket, &recvBuf, 1, NULL, &recvflag, &client->ol, NULL);
     }
@@ -96,3 +139,5 @@ DWORD WINAPI WS::WorkerThread(LPVOID lpParam){
     return 0;
 
 }
+
+#endif
