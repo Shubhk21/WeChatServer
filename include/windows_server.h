@@ -12,6 +12,10 @@ namespace WS{
 
     extern SOCKET server_socket;
 
+    extern std::map<std::string,SOCKET> usr_to_soc;
+
+    extern std::map<SOCKET,std::string> soc_to_usr;
+
     void Initialize(); // initialize winsock
 
     void CreateSocket(); // create socket
@@ -22,7 +26,7 @@ namespace WS{
 
     SOCKET AcceptSocket();
 
-    int SendData(std::string data); // send data
+    int SendData(std::string sender,std::string data,SOCKET client_socket); // send data
 
     DWORD WINAPI WorkerThread(LPVOID lpParam);
 }

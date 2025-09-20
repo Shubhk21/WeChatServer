@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <nlohmann/json.hpp>
 
 namespace CONFIG {
     extern const std::string SERVER_IP;
