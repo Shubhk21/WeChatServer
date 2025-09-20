@@ -45,7 +45,7 @@ void chatServer(){
     closesocket(WS::server_socket);
     WSACleanup();
 
-    #elif APPLE
+    #elif __APPLE__
 
     #endif
 
