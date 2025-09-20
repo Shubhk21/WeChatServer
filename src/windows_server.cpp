@@ -62,13 +62,11 @@ SOCKET WS::AcceptSocket(){
 }
 
 int WS::SendData(std::string sender,std::string data,SOCKET client_socket){
-    std::cout<<"inside senddatta\n";
     nlohmann::json data_packet = {
         {"sender" , sender},
         {"data" , data}
     };
 
-    std::cout<<sender<<" "<<data<<std::endl;
     return send(client_socket, data_packet.dump().c_str(), data_packet.dump().length(), 0);
 }
 
@@ -82,16 +80,13 @@ DWORD WINAPI WS::WorkerThread(LPVOID lpParam){
 
         BOOL ok = GetQueuedCompletionStatus(hiocp, &bytesTransferred, &completionKey, &pOv, INFINITE);
 
-        if(!ok){
-            std::cerr<<"Error occured in worker thread Queue function!\n";
-            continue;
-        }
         ClientContext* client = (ClientContext*)completionKey;
 
-        if(bytesTransferred==0){
-            std::cout<<"Client disconnected!\n";
+        if(!ok || bytesTransferred==0){
+            std::cerr<<"Client disconnected! : "<<GetLastError()<<'\n';
             WS::usr_to_soc.erase(WS::soc_to_usr[client->client_socket]);
             WS::soc_to_usr.erase(client->client_socket);
+            std::cout<<WS::soc_to_usr.size()<<" "<<WS::usr_to_soc.size()<<std::endl;
             closesocket(client->client_socket);
             delete client;
             continue;
@@ -113,21 +108,17 @@ DWORD WINAPI WS::WorkerThread(LPVOID lpParam){
         }
         else{
 
-            std::cout<<"message to send\n";
-
             auto find_user  = WS::usr_to_soc.find(recieve_user);
 
             if(find_user!=WS::usr_to_soc.end()){
-                std::cout<<"sending message\n";
                 int bytes_send = WS::SendData(send_user,data_to_send,find_user->second);
-                std::cout<<"bytes :"<<" "<<bytes_send<<'\n';
             }
             else{
-                std::cout<<"No such User\n";
                 WS::SendData("","No such User!",client->client_socket);
             }
         }
 
+        std::cout<<WS::soc_to_usr.size()<<" "<<WS::usr_to_soc.size()<<std::endl;
 
         ZeroMemory(&client->ol,sizeof(OVERLAPPED));
         DWORD recvflag = 0;
