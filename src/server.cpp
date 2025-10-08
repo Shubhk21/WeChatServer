@@ -57,15 +57,24 @@ void chatServer(){
 
 int main(){
 
-    std::cout<<"Server Started!"<<std::endl; 
+    try
+    {
+        std::cout<<"Server Started!"<<std::endl; 
 
-    std::thread auth_server_thread(handleClientAuth);
+        std::thread auth_server_thread(handleClientAuth);
 
-    std::thread chat_server_thread(chatServer);
+        std::thread chat_server_thread(chatServer);
 
-    auth_server_thread.join();
+        auth_server_thread.join();
 
-    chat_server_thread.join();
+        chat_server_thread.join();
 
-    return 0;
+        return 0;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        exit(-1);
+    }
+    
 }

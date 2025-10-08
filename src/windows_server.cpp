@@ -24,8 +24,16 @@ void WS::Initialize()
 
 void WS::CreateSocket()
 {
-
-    server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    try
+    {
+        server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        exit(-1);
+    }
+    
 }
 
 void WS::Bind()
