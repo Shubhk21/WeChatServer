@@ -1,0 +1,1 @@
+Chat Server which uses thread pool to server thousands of users at a time. It uses IOCP to kill one socket each client bottelneck and makes sure resources are not over used. It also serves postgres DB for login and register purpose.
