@@ -1,0 +1,2 @@
+1) If chatting with offline user the data sent from server to client should be json format --> {"Server":"Offline"}.
+2) 

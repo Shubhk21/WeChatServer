@@ -1,6 +1,7 @@
 #include "client_auth.h"
 #include "db_pool.h"
 
+
 void handleClientAuth(){
 
     DBPool DBPool_obj(CONFIG::DB_URL,5);
@@ -23,6 +24,8 @@ void handleClientAuth(){
         nlohmann::json request_data = nlohmann::json::parse(req.body);
         std::string username = request_data["username"];
         std::string password = request_data["password"];
+
+        
 
         PGconn *conn = DBPool_obj.acquireConnection();
 
