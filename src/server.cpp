@@ -6,8 +6,8 @@
 #include "windows_server.h"
 #include "client_context.h"
 std::vector<ClientContext *> clients;
-#elif APPLE
-
+#elif __APPLE__
+#include "unix_server.h"
 #endif
 
 
@@ -46,7 +46,10 @@ void chatServer(){
     WSACleanup();
 
     #elif __APPLE__
-
+    US::createSocket();
+    US::bindSocket();
+    US::listenClient();
+    US::handleSocket();
     #endif
 
 }
