@@ -33,7 +33,7 @@ void chatServer(){
         ClientContext * client  = new ClientContext();
         client->client_socket = client_socket;
 
-        CreateIoCompletionPort((HANDLE)client_socket,WS::hiocp,(ULONG_PTR)client,4);
+        CreateIoCompletionPort((HANDLE)client_socket,WS::hiocp,(ULONG_PTR)client,0);
 
         ZeroMemory(&client->ol,sizeof(OVERLAPPED));
         DWORD recvFlags = 0;

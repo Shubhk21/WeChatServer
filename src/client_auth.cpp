@@ -64,7 +64,7 @@ void handleClientAuth(){
                 return;
             }
 
-            LDB::is_active_mutex.lock();
+            std::unique_lock<std::mutex> lock_is_active(LDB::is_active_mutex);
 
             auto find_if_active = LDB::currently_active.find(username);
 
@@ -80,7 +80,7 @@ void handleClientAuth(){
                 DBPool_obj.releaseConnection(conn);
                 }
 
-            LDB::is_active_mutex.unlock();
+            lock_is_active.unlock();
 
         }
         catch(const std::exception& e)

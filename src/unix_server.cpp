@@ -73,7 +73,7 @@ static void parseAndSend(int sender_fd, const std::string& json_data){
         if(it == US::usr_to_soc.end()){
             nlohmann::json error_response = {
                 {"sender", "server"},
-                {"reciever", sender},
+                {"receiver", sender},
                 {"data", "Error: User '" + recipient + "' not found"}
             };
             std::string error_json = error_response.dump();
@@ -86,19 +86,8 @@ static void parseAndSend(int sender_fd, const std::string& json_data){
     }
     catch(const nlohmann::json::exception& e)
     {
-        return;
         std::cerr << "JSON parsing error: " << e.what() << std::endl;
-        
-        // Send error back to sender
-        nlohmann::json error_response = {
-            {"sender", "server"},
-            {"reciever", US::soc_to_usr[sender_fd]},
-            {"data", "Error: Invalid message format"}
-        };
-
-        std::string error_json = error_response.dump();
-        
-        send(sender_fd, error_json.c_str(), error_json.length(), 0);
+        return;
     }
 }
 

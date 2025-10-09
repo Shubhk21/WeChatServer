@@ -11,6 +11,8 @@ std::map<std::string, SOCKET> WS::usr_to_soc;
 
 std::map<SOCKET, std::string> WS::soc_to_usr;
 
+static std::mutex mutex_for_map;
+
 void WS::Initialize()
 {
 
@@ -103,14 +105,19 @@ DWORD WINAPI WS::WorkerThread(LPVOID lpParam)
             {
                 std::cerr << "Client disconnected! : " << GetLastError() << '\n';
 
-                LDB::is_active_mutex.lock();
+                std::unique_lock<std::mutex> lock_is_active(LDB::is_active_mutex);
 
                 LDB::currently_active.erase(WS::soc_to_usr[client->client_socket]);
 
-                LDB::is_active_mutex.unlock();
+                lock_is_active.unlock();
+
+                std::unique_lock<std::mutex> lock_for_map(mutex_for_map);
 
                 WS::usr_to_soc.erase(WS::soc_to_usr[client->client_socket]);
                 WS::soc_to_usr.erase(client->client_socket);
+
+                lock_for_map.unlock();
+
                 closesocket(client->client_socket);
                 delete client;
                 continue;
@@ -140,14 +147,17 @@ DWORD WINAPI WS::WorkerThread(LPVOID lpParam)
 
             if (data_to_send == "hand_shake" && recieve_user == "hand_shake")
             {
+                std::unique_lock<std::mutex> lock_for_map(mutex_for_map);
                 WS::usr_to_soc.emplace(send_user, client->client_socket);
                 WS::soc_to_usr.emplace(client->client_socket, send_user);
+                lock_for_map.unlock();
                 std::cout << "hand shake\n";
             }
             else
             {
-
+                std::unique_lock<std::mutex> lock_for_map(mutex_for_map);
                 auto find_user = WS::usr_to_soc.find(recieve_user);
+                lock_for_map.unlock();
 
                 if (find_user != WS::usr_to_soc.end())
                 {
