@@ -5,7 +5,6 @@ DBPool::DBPool(const std::string &conninfo, int poolSize)
 
     for (int i = 0; i < poolSize; i++)
     {
-
         try
         {
             PGconn *conn = PQconnectdb(conninfo.c_str());

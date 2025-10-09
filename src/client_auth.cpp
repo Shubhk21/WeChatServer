@@ -14,12 +14,7 @@ void handleClientAuth(){
             std::cout << "Received POST /login from CLIENT" << std::endl;
 
             if(req.body.empty()){
-                nlohmann::json error_response = {
-                    {"message", "Request body cannot be empty"},
-                    {"status", "error"}
-                };
                 res.status=400;
-                res.set_content(error_response.dump(), "application/json");
                 return;
             }
 
@@ -49,13 +44,7 @@ void handleClientAuth(){
             );
 
             if (PQresultStatus(db_response) != PGRES_TUPLES_OK) {
-                std::cerr << "Query failed: " << PQerrorMessage(conn) << std::endl;
-                nlohmann::json error_response = {
-                    {"message", "Internal server error occurred"},
-                    {"status", "error"}
-                };
                 res.status=500;
-                res.set_content(error_response.dump(), "application/json");
                 PQclear(db_response);
                 DBPool_obj.releaseConnection(conn);
                 return;
@@ -65,11 +54,11 @@ void handleClientAuth(){
 
             if(numRows == 0){
                 res.status = 401;
-                nlohmann::json error_response = {
-                    {"message", "Invalid username or password"},
-                    {"status", "error"}
-                };
-                res.set_content(error_response.dump(), "application/json");
+                // nlohmann::json error_response = {
+                //     {"message", "Invalid username or password"},
+                //     {"status", "error"}
+                // };
+                // res.set_content(error_response.dump(), "application/json");
                 PQclear(db_response);
                 DBPool_obj.releaseConnection(conn);
                 return;
@@ -80,23 +69,13 @@ void handleClientAuth(){
             auto find_if_active = LDB::currently_active.find(username);
 
             if(find_if_active!=LDB::currently_active.end()){
-                nlohmann::json user_response = {
-                {"message", "Duplicate login attempt!"},
-                {"status", "ok"}
-                };
                 res.status=250;
-                res.set_content(user_response.dump(), "application/json");
                 PQclear(db_response);
                 DBPool_obj.releaseConnection(conn);
             }
             else{
                 LDB::currently_active.insert(username);
-                nlohmann::json user_response = {
-                {"message", "Login successful"},
-                {"status", "ok"}
-                };
                 res.status=200;
-                res.set_content(user_response.dump(), "application/json");
                 PQclear(db_response);
                 DBPool_obj.releaseConnection(conn);
                 }
