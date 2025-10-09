@@ -1,6 +1,7 @@
 #ifdef __APPLE__
 #include "config.h"
 #include "unix_server.h"
+#include "db_manager.h"
 
 int US::server_socket;
 
@@ -177,20 +178,15 @@ void US::handleSocket(){
                         buffer[bytes_read] = '\0';
                         parseAndSend(client_fd, buffer);
                         std::cout << "Received message from user: " << soc_to_usr[client_fd] << std::endl;
-                    }else if(bytes_read == 0) {
+                    }else if(bytes_read <= 0) {
                         std::cout << "Client disconnected" << std::endl;
+                        LDB::is_active_mutex.lock();
+                        LDB::currently_active.erase(soc_to_usr[client_fd]);
+                        LDB::is_active_mutex.unlock();
                         auto it = soc_to_usr.find(client_fd);
                         usr_to_soc.erase(it->second);
                         soc_to_usr.erase(client_fd);
                         close(client_fd);
-                    }else {
-                        if(errno != EAGAIN && errno != EWOULDBLOCK) {
-                            std::cerr << "recv error" << std::endl;
-                            auto it = soc_to_usr.find(client_fd);
-                            usr_to_soc.erase(it->second);
-                            soc_to_usr.erase(client_fd);
-                            close(client_fd);
-                        }
                     }
                 }
             }
