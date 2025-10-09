@@ -1,6 +1,6 @@
 #include "client_auth.h"
 #include "db_pool.h"
-
+#include "db_manager.h"
 
 void handleClientAuth(){
 
@@ -75,14 +75,34 @@ void handleClientAuth(){
                 return;
             }
 
-            nlohmann::json user_response = {
+            LDB::is_active_mutex.lock();
+
+            auto find_if_active = LDB::currently_active.find(username);
+
+            if(find_if_active!=LDB::currently_active.end()){
+                nlohmann::json user_response = {
+                {"message", "Duplicate login attempt!"},
+                {"status", "ok"}
+                };
+                res.status=250;
+                res.set_content(user_response.dump(), "application/json");
+                PQclear(db_response);
+                DBPool_obj.releaseConnection(conn);
+            }
+            else{
+                LDB::currently_active.insert(username);
+                nlohmann::json user_response = {
                 {"message", "Login successful"},
                 {"status", "ok"}
-            };
-            res.status=200;
-            res.set_content(user_response.dump(), "application/json");
-            PQclear(db_response);
-            DBPool_obj.releaseConnection(conn);
+                };
+                res.status=200;
+                res.set_content(user_response.dump(), "application/json");
+                PQclear(db_response);
+                DBPool_obj.releaseConnection(conn);
+                }
+
+            LDB::is_active_mutex.unlock();
+
         }
         catch(const std::exception& e)
         {

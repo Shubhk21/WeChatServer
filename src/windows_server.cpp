@@ -1,6 +1,7 @@
 #ifdef _WIN32
 #include "config.h"
 #include "windows_server.h"
+#include "db_manager.h"
 
 SOCKET WS::server_socket = INVALID_SOCKET;
 
@@ -101,9 +102,15 @@ DWORD WINAPI WS::WorkerThread(LPVOID lpParam)
             if (!ok || bytesTransferred == 0)
             {
                 std::cerr << "Client disconnected! : " << GetLastError() << '\n';
+
+                LDB::is_active_mutex.lock();
+
+                LDB::currently_active.erase(WS::soc_to_usr[client->client_socket]);
+
+                LDB::is_active_mutex.unlock();
+
                 WS::usr_to_soc.erase(WS::soc_to_usr[client->client_socket]);
                 WS::soc_to_usr.erase(client->client_socket);
-                std::cout << WS::soc_to_usr.size() << " " << WS::usr_to_soc.size() << std::endl;
                 closesocket(client->client_socket);
                 delete client;
                 continue;
