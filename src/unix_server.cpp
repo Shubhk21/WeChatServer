@@ -63,7 +63,9 @@ static void parseAndSend(int sender_fd, const std::string& json_data){
 
         if(message_content == "hand_shake" && recipient == "hand_shake"){
             auto it = US::soc_to_usr.find(sender_fd);
-            it->second = sender;
+            if(it!=US::soc_to_usr.end()){
+                it->second = sender;
+            }
             US::usr_to_soc.emplace(sender, sender_fd);
             std::cout<< "handshake triggered! \n";
             return;
@@ -72,9 +74,8 @@ static void parseAndSend(int sender_fd, const std::string& json_data){
         auto it = US::usr_to_soc.find(recipient);
         if(it == US::usr_to_soc.end()){
             nlohmann::json error_response = {
-                {"sender", "server"},
-                {"receiver", sender},
-                {"data", "Error: User '" + recipient + "' not found"}
+                {"sender", "Server"},
+                {"data", "User Offline"}
             };
             std::string error_json = error_response.dump();
             send(sender_fd, error_json.c_str(), error_json.length(), 0);
