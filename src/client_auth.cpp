@@ -26,6 +26,11 @@ void handleClientAuth(){
 
             PGconn *conn = DBPool_obj.acquireConnection();
 
+            if(conn==nullptr){
+                res.status=429;
+                return;
+            }
+
             const char* query = "SELECT id FROM users WHERE username = $1 AND password_hash = $2";
             const char* paramValues[] = { 
                 username.c_str(),
@@ -107,6 +112,11 @@ void handleClientAuth(){
             }
 
             PGconn * conn = DBPool_obj.acquireConnection();
+
+            if(conn==nullptr){
+                res.status=429;
+                return;
+            }
 
             const char* paramValues[2];
 
