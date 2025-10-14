@@ -7,6 +7,11 @@
 #include <cerrno>
 #include <fcntl.h>
 #include <unistd.h> 
+#ifdef __APPLE__
+    #include <sys/event.h>    
+#elif __linux__
+    #include <sys/epoll.h> 
+#endif
 #pragma once
 
 namespace US {

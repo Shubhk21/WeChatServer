@@ -1,4 +1,4 @@
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 #include "config.h"
 #include "unix_server.h"
 #include "db_manager.h"
@@ -92,6 +92,7 @@ static void parseAndSend(int sender_fd, const std::string& json_data){
     }
 }
 
+#ifdef __APPLE__
 void US::handleSocket(){
     try
     {
@@ -176,6 +177,12 @@ void US::handleSocket(){
                         auto it = soc_to_usr.find(client_fd);
                         usr_to_soc.erase(it->second);
                         soc_to_usr.erase(client_fd);
+
+                        // Remove from kqueue before closing
+                        struct kevent delete_event;
+                        EV_SET(&delete_event, client_fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+                        kevent(kq, &delete_event, 1, NULL, 0, NULL);
+                        
                         close(client_fd);
                     }
                 }
@@ -189,5 +196,108 @@ void US::handleSocket(){
     }
     
 }
+#elif __linux__
+void US::handleSocket(){
+    try
+    {
+        int epfd = epoll_create1(0);
+        if(epfd == -1){
+            std::cerr << "epoll_create1 failed \n";
+            close(server_socket);
+            exit(1);
+        }
+
+        //adding server to epoll to watch incoming events:
+        struct epoll_event server_add_event;
+        server_add_event.events = EPOLLIN;
+        server_add_event.data.fd = server_socket;
+
+        if(epoll_ctl(epfd, EPOLL_CTL_ADD, server_socket, &server_add_event) == -1){
+            std::cerr << "epoll add server socket failed \n";
+            close(server_socket);
+            close(epfd);
+            exit(1);
+        }
+
+        //Array to receive events:
+        const int MAX_EVENTS = 10;
+        struct epoll_event input_events[MAX_EVENTS];
+
+        while(1) {
+            int total_events = epoll_wait(epfd, input_events, MAX_EVENTS, -1);
+
+            if(total_events == -1){
+                std::cerr << "epoll_wait failed \n";
+                close(server_socket);
+                close(epfd);
+                exit(1);
+            }
+
+            //processing each event:
+            for(int i = 0; i < total_events; ++i){
+                if(input_events[i].data.fd == server_socket){
+                    //new client connection handler:
+                    int client_fd = accept(server_socket, nullptr, nullptr);
+
+                    if(client_fd == -1){
+                        std::cerr << "Accept block for a client \n";
+                        continue;
+                    }
+
+                    //make the socket non-blocking!
+                    int flags = fcntl(client_fd, F_GETFL, 0);
+                    fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
+                    
+                    //creating a struct for the client:
+                    struct epoll_event client_event;
+                    client_event.events = EPOLLIN | EPOLLET;  // Edge-triggered mode
+                    client_event.data.fd = client_fd;
+
+                    if(epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &client_event) == -1){
+                        std::cerr << "Client was not added to epoll \n";
+                        close(client_fd);
+                        continue;
+                    }
+
+                    //creating an entry in the map:
+                    soc_to_usr.emplace(client_fd, "unknown");
+
+                    std::cout << "Client added to epoll! \n";
+                }else{
+                    //client message handler:
+                    std::cout << "Server is receiving your messages! \n"; 
+                    int client_fd = input_events[i].data.fd;
+                    
+                    char buffer[1024];
+                    ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+
+                    if(bytes_read > 0) {
+                        buffer[bytes_read] = '\0';
+                        parseAndSend(client_fd, buffer);
+                        std::cout << "Received message from user: " << soc_to_usr[client_fd] << std::endl;
+                    }else if(bytes_read <= 0) {
+                        std::cout << "Client disconnected" << std::endl;
+                        LDB::is_active_mutex.lock();
+                        LDB::currently_active.erase(soc_to_usr[client_fd]);
+                        LDB::is_active_mutex.unlock();
+                        auto it = soc_to_usr.find(client_fd);
+                        usr_to_soc.erase(it->second);
+                        soc_to_usr.erase(client_fd);
+                        
+                        // Remove from epoll before closing
+                        epoll_ctl(epfd, EPOLL_CTL_DEL, client_fd, NULL);
+                        close(client_fd);
+                    }
+                }
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return;
+    }
+}
+#endif
 
 #endif
